@@ -1,0 +1,318 @@
+openapi: '3.0.2'
+info:
+  title: PixelBank API
+  version: '0.0.1'
+servers:
+  - url: https://localhost:8080
+# TODOs:
+# - add auth for admin & protected users?
+#   - if so, add new 401 errors for APIs
+# - add API for fetching supported payment types
+# - work out a card payment flow then abstract that to all payment flows (i.e. ask bank to make a request, get a response with some action, confirm it)
+# - document all the things!
+tags:
+  - name: User
+    description: Interact with Users of the Bank
+  - name: Admin
+    description: Administrate the bank
+  - name: Transactions
+    description: Create transactions
+  - name: Utilities
+    description: Utilities for checking liveness, uptime, etc
+paths:
+  /ping:
+    get:
+      summary: Check if PixelBank is responding
+      description: Returns status code 200, provided PixelBank is up and responding to requests
+      tags: 
+        - Utilities
+      responses:
+        '200':
+          description: OK
+  ### USERS
+  /user/{userID}:
+    parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+    get:
+      summary: Fetches user details
+      description: Returns the details of a User
+      tags: 
+        - User
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: No User found
+    put:
+      summary: Update a user
+      description: Updates the details of a User. Note, this will explicitly ignore balance.
+      tags:
+        - User
+      requestBody:
+        description: Update a User
+        content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid user Identifier
+        '404':
+          description: User not found
+    post:
+      summary: Add a new user
+      description: Create a new user
+      tags:
+        - User
+      requestBody:
+        description: Details of the user to create
+        content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid user object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User' 
+        '409':
+          description: Resource already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /user/{userID}/balance:
+    parameters:
+    - name: username
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Fetches user balance
+      description: Returns the balance of a User
+      tags: 
+        - User
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Balance'
+        '404':
+          description: No User found
+
+  /users:
+    get:
+      tags: 
+        - User
+      summary: List all users
+      description: Returns a list of all visible users registered with the bank
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Users'
+  ### END USERS
+  ### TRANSACTIONS
+  /txn/spend:
+    post:
+      tags:
+        - Transactions
+      summary: Spend money
+      description: Spend money on an item
+      requestBody:
+        description: Details of the buyer and items being bought
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Spend'
+      responses:
+        '200':
+          description: Success
+        '409':
+          description: The transaction failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /txn/deposit:
+    post:
+      tags: 
+        - Transactions
+      summary: Deposit money
+      description: Requests the bank to create a deposit request with the specified amount
+      requestBody:
+        description: Details of the user and the amount wanting to be deposited
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Deposit'
+      responses:
+        '200':
+          description: Success
+          # TODO: make this create a request... whatever that means (look up how card payments transaction flows would work)
+        '409':
+          description: An error occurred
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /txn/transfer:
+    post:
+      tags: 
+        - Transactions
+      summary: Transfer money
+      description: Transfer money from one user to another
+      requestBody:
+        description: Details of the transfer
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Transfer'
+      responses:
+        '200':
+          description: Success
+        '409':
+          description: An error occurred
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  ### END TRANSACTIONS
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Error code
+          example: 10
+        message:
+          type: string
+          description: Reason the request is rejected
+          example: An error occurred
+
+    Username:
+      type: string
+      description: Username of the user
+      example: testuser123
+
+    User:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/Username'
+        balance:
+          type: number
+          format: int64
+          description: User's current balance, in cents
+          example: 1337
+        role:
+          type: string
+          enum:
+            - member
+            - guest
+            - friend
+          description: User's current role
+          example: member
+    
+    Users:
+      type: array
+      items:
+        $ref: '#/components/schemas/User'
+
+    Balance:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/Username'
+        balance:
+          type: integer
+          description: Balance of a user
+
+    Item:
+      type: object
+      properties:
+        itemID: 
+          type: string
+          description: The item ID being bought
+          example: "000123456789"
+        quantity:
+          type: integer
+          description: The quantity of the item being bought
+          example: 2
+
+    Spend:
+      type: object
+      properties:
+        buyer:
+          $ref: '#/components/schemas/Username'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+
+    Transfer:
+      type: object
+      properties:
+        sender:
+          $ref: '#/components/schemas/Username'
+        receiver:
+          $ref: '#/components/schemas/Username'
+        amount:
+          type: integer
+          description: The amount to transfer, in cents
+          example: 1337
+
+    Deposit:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/Username'
+        amount: 
+          type: integer
+          minimum: 1
+          description: Amount to be deposited
+        type:
+          type: string
+          description: The type of deposit to be made
+          # TODO: make a new API to fetch the list of supported payments
+          enum:
+            - cash
+            - card
+            - ideal

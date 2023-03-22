@@ -1,0 +1,7 @@
+CREATE TABLE users (
+	id TEXT PRIMARY KEY NOT NULL, -- UUID v4
+	username VARCHAR NOT NULL,
+	created_at TEXT NOT NULL, -- ISO8601 format
+	balance INTEGER NOT NULL,
+	role INTEGER NOT NULL
+)
