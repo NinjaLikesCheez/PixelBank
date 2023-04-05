@@ -24,7 +24,7 @@ paths:
     get:
       summary: Check if PixelBank is responding
       description: Returns status code 200, provided PixelBank is up and responding to requests
-      tags: 
+      tags:
         - Utilities
       responses:
         '200':
@@ -40,7 +40,7 @@ paths:
     get:
       summary: Fetches user details
       description: Returns the details of a User
-      tags: 
+      tags:
         - User
       responses:
         '200':
@@ -98,7 +98,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User' 
+                $ref: '#/components/schemas/User'
         '409':
           description: Resource already exists
           content:
@@ -115,7 +115,7 @@ paths:
     get:
       summary: Fetches user balance
       description: Returns the balance of a User
-      tags: 
+      tags:
         - User
       responses:
         '200':
@@ -129,7 +129,7 @@ paths:
 
   /users:
     get:
-      tags: 
+      tags:
         - User
       summary: List all users
       description: Returns a list of all visible users registered with the bank
@@ -166,7 +166,7 @@ paths:
 
   /txn/deposit:
     post:
-      tags: 
+      tags:
         - Transactions
       summary: Deposit money
       description: Requests the bank to create a deposit request with the specified amount
@@ -190,7 +190,7 @@ paths:
 
   /txn/transfer:
     post:
-      tags: 
+      tags:
         - Transactions
       summary: Transfer money
       description: Transfer money from one user to another
@@ -248,9 +248,10 @@ components:
             - member
             - guest
             - friend
+            - admin
           description: User's current role
           example: member
-    
+
     Users:
       type: array
       items:
@@ -268,7 +269,7 @@ components:
     Item:
       type: object
       properties:
-        itemID: 
+        itemID:
           type: string
           description: The item ID being bought
           example: "000123456789"
@@ -304,7 +305,7 @@ components:
       properties:
         user:
           $ref: '#/components/schemas/Username'
-        amount: 
+        amount:
           type: integer
           minimum: 1
           description: Amount to be deposited

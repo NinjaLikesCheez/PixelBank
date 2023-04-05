@@ -1,0 +1,3 @@
+application_port: 1337
+database:
+  url: "database/pixelbank.db"

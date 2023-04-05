@@ -1,8 +1,8 @@
-import 'package:backend/backend.dart';
+import 'package:shell/shell.dart';
 import 'package:test/test.dart';
 
 void main() {
   test('calculate', () {
-    // expect(calculate(), 42);
+    expect(calculate(), 42);
   });
 }
