@@ -1,7 +1,9 @@
 use std::{net::TcpListener};
-use diesel::{Connection, SqliteConnection, r2d2};
+use diesel::{SqliteConnection, r2d2};
 use diesel::r2d2::{ConnectionManager, Pool};
-use server::configuration::{get_configuration, self};
+extern crate diesel_migrations;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 
 pub struct TestContext {
 	pub address: String,
@@ -15,14 +17,13 @@ impl TestContext {
 
 		let port = listener.local_addr().unwrap().port();
 
-		// TODO: we need to randomize and initalize a fresh database for every context here
-		let configuration = get_configuration()
-			.expect("Failed to read configuration");
-		let manager = r2d2::ConnectionManager::<SqliteConnection>::new(configuration.database.path);
+		let manager = r2d2::ConnectionManager::<SqliteConnection>::new(":memory:");
 		let pool = r2d2::Pool::builder()
 			.build(manager)
 			.expect("Failed to load SQLite database");
 
+		let mut connection = pool.get().expect("Failed to get connection from pool");
+		connection.run_pending_migrations(MIGRATIONS).expect("Failed to run migrations");
 
 		let server = server::startup::run(listener, pool.clone())
 			.expect("Failed to bind address");
