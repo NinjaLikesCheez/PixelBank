@@ -1,23 +1,20 @@
-use actix_web::{web, HttpResponse, error::{self}, http::{StatusCode}, Responder};
+use actix_web::{web, HttpResponse, error::{self}, http::{StatusCode}};
 use diesel::{SqliteConnection, RunQueryDsl, r2d2};
-use serde::Serialize;
+use serde::{Deserialize};
 use derive_more::{Display, Error};
+use diesel::prelude::*;
 
 use crate::models::User;
+use crate::models::APIError;
 
 // TODO: move to database module
 type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize)]
 pub struct UserData {
 	pub username: String,
 	pub balance: i32,
 	pub role: String
-}
-
-#[derive(Serialize)]
-struct APIError {
-	error: String
 }
 
 #[derive(Debug, Display, Error)]
@@ -63,21 +60,26 @@ pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> 
 		return Err(UserError::NewUserBalanceTooLow);
 	}
 
-	let user = User::new(body.username.clone(), body.balance, body.role.clone());
-
 	use crate::schema::users::dsl::*;
-	let rows_inserted = web::block(move || {
+
+	let user = web::block(move || {
 		let mut connection = pool.get()
 			.expect("Failed to get connection from pool");
+
+		let user = User::new(body.username.clone(), body.balance, body.role.clone());
 
 		diesel::insert_into(users)
 			.values(&user)
 			.execute(&mut connection)
-			.expect("Couldn't insert user")
+			.expect("Couldn't insert user");
+
+		users
+			.filter(username.eq(body.username.clone()))
+			.first::<User>(&mut connection)
+			.expect("Error fetching user")
 	})
 	.await
 	.map_err(|_e| UserError::UserExistsError)?;
 
-	// TODO: Ensure user was stored by returning the user from the database and returning it - Ok(web::Json(user))
-	Ok(HttpResponse::Ok().finish())
+	Ok(HttpResponse::Ok().json(user))
 }
