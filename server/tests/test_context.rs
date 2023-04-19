@@ -1,5 +1,4 @@
 use std::{net::TcpListener};
-use actix_web::dev::RequestHead;
 use diesel::{SqliteConnection, r2d2};
 use diesel::r2d2::{ConnectionManager, Pool};
 extern crate diesel_migrations;

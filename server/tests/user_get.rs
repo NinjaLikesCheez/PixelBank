@@ -1,7 +1,6 @@
 use chrono::{Utc, DateTime};
 use serde_json::json;
-use server::{models::*, schema};
-use diesel::prelude::*;
+use server::{models::*};
 
 pub mod test_context;
 use test_context::*;

@@ -4,7 +4,7 @@ use serde::{Deserialize};
 use derive_more::{Display, Error};
 use diesel::prelude::*;
 
-use crate::{models::User, routes::user};
+use crate::{models::User};
 use crate::models::APIError;
 
 // TODO: move to database module
