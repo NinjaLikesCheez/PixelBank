@@ -6,25 +6,28 @@ use diesel::prelude::*;
 pub mod test_context;
 use test_context::*;
 
-#[tokio::test]
-async fn create_user_returns_200_for_valid_data() {
-	let _ctx = TestContext::new();
-	let client = reqwest::Client::new();
-
+async fn create_user(_ctx: &TestContext) -> reqwest::Response {
 	let json = json!({
 		"username": "ninja",
 		"balance": 0,
 		"role": "member",
 	});
 
-	let response = client
+	_ctx.client
 		.post(&format!("{}/user", _ctx.address))
 		.json(&json)
 		.send()
 		.await
-		.expect("Failed to execute request");
+		.expect("Failed to execute request")
+}
 
-	assert_eq!(200, response.status().as_u16());
+#[tokio::test]
+async fn create_user_returns_200_for_valid_data() {
+	let _ctx = TestContext::new();
+
+	let response = create_user(&_ctx).await;
+
+	assert_eq!(200, response.status());
 
 	// Check the data made it to the database
 	let connection = &mut _ctx.pool.get().expect("Failed to get connection from pool");
@@ -71,31 +74,13 @@ async fn create_user_returns_422_when_data_is_invalid() {
 #[tokio::test]
 async fn create_user_returns_409_when_user_exists() {
 	let _ctx = TestContext::new();
-	let client = reqwest::Client::new();
 
-	// First, create a user
-	let json = json!({
-		"username": "ninja",
-		"balance": 0,
-		"role": "member",
-	});
-
-	let response = client
-		.post(&format!("{}/user", _ctx.address))
-		.json(&json)
-		.send()
-		.await
-		.expect("Failed to execute request");
+	let response = create_user(&_ctx).await;
 
 	assert_eq!(200, response.status().as_u16());
 
 	// Try to create the user again
-	let response = client
-		.post(&format!("{}/user", _ctx.address))
-		.json(&json)
-		.send()
-		.await
-		.expect("Failed to execute request");
+	let response = create_user(&_ctx).await;
 
 	assert_eq!(409, response.status().as_u16());
 
@@ -110,7 +95,6 @@ async fn create_user_returns_409_when_user_exists() {
 #[tokio::test]
 async fn create_user_returns_400_when_balance_too_low() {
 	let _ctx = TestContext::new();
-	let client = reqwest::Client::new();
 
 	// First, create a user
 	let json = json!({
@@ -119,7 +103,7 @@ async fn create_user_returns_400_when_balance_too_low() {
 		"role": "member",
 	});
 
-	let response = client
+	let response = _ctx.client
 		.post(&format!("{}/user", _ctx.address))
 		.json(&json)
 		.send()
@@ -139,7 +123,6 @@ async fn create_user_returns_400_when_balance_too_low() {
 #[tokio::test]
 async fn create_user_returns_403_when_creating_admin() {
 	let _ctx = TestContext::new();
-	let client = reqwest::Client::new();
 
 	// First, create a user
 	let json = json!({
@@ -148,7 +131,7 @@ async fn create_user_returns_403_when_creating_admin() {
 		"role": "admin",
 	});
 
-	let response = client
+	let response = _ctx.client
 		.post(&format!("{}/user", _ctx.address))
 		.json(&json)
 		.send()

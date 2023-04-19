@@ -4,7 +4,7 @@ use serde::{Deserialize};
 use derive_more::{Display, Error};
 use diesel::prelude::*;
 
-use crate::models::User;
+use crate::{models::User, routes::user};
 use crate::models::APIError;
 
 // TODO: move to database module
@@ -28,6 +28,9 @@ pub enum UserError {
 	#[display(fmt = "New user balance cannot be below zero")]
 	NewUserBalanceTooLow,
 
+	#[display(fmt = "User doesn't exist")]
+	NoSuchUser,
+
 	#[display(fmt = "An internal error occurred. Please feed the maintainers")]
 	InternalError
 }
@@ -43,6 +46,7 @@ impl error::ResponseError for UserError {
 			UserError::InternalError => StatusCode::BAD_REQUEST,
 			UserError::NewUserBalanceTooLow => StatusCode::BAD_REQUEST,
 
+			UserError::NoSuchUser => StatusCode::NOT_FOUND,
 			UserError::UserExistsError => StatusCode::CONFLICT,
 			UserError::CantCreateAdminError => StatusCode::FORBIDDEN,
 		}
@@ -82,4 +86,41 @@ pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> 
 	.map_err(|_e| UserError::UserExistsError)?;
 
 	Ok(HttpResponse::Ok().json(user))
+}
+
+pub async fn get_user(path: web::Path<String>,  pool: web::Data<DbPool>) -> Result<HttpResponse, UserError> {
+	let username = path.into_inner();
+
+	println!("username: {}", username);
+
+	let user = web::block(move || {
+		use crate::schema::users::dsl::*;
+		let mut connection = pool.get()
+			.expect("Failed to get connection from pool");
+
+		users
+			.filter(username.eq(username.clone()))
+			.first::<User>(&mut connection)
+			.expect("Error fetching user")
+	})
+	.await
+	.map_err(|_e| UserError::NoSuchUser)?;
+
+	Ok(HttpResponse::Ok().json(user))
+}
+
+pub async fn get_all_users(pool: web::Data<DbPool>) -> Result<HttpResponse, UserError> {
+	let users = web::block(move || {
+		use crate::schema::users::dsl::*;
+		let mut connection = pool.get()
+			.expect("Failed to get connection from pool");
+
+		users
+			.load::<User>(&mut connection)
+			.expect("Failed to load all users")
+	})
+	.await
+	.map_err(|_e| UserError::NoSuchUser)?;
+
+	Ok(HttpResponse::Ok().json(users))
 }

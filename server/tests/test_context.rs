@@ -1,4 +1,5 @@
 use std::{net::TcpListener};
+use actix_web::dev::RequestHead;
 use diesel::{SqliteConnection, r2d2};
 use diesel::r2d2::{ConnectionManager, Pool};
 extern crate diesel_migrations;
@@ -7,7 +8,8 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 
 pub struct TestContext {
 	pub address: String,
-	pub pool: Pool<ConnectionManager<SqliteConnection>>
+	pub pool: Pool<ConnectionManager<SqliteConnection>>,
+	pub client: reqwest::Client
 }
 
 impl TestContext {
@@ -32,13 +34,14 @@ impl TestContext {
 
 		Self {
 			address: format!("http://127.0.0.1:{}", port),
-			pool: pool
+			pool: pool,
+			client: reqwest::Client::new()
 		}
 	}
 }
 
-impl Drop for TestContext {
-	fn drop(&mut self) {
-		println!("Tear down");
-	}
-}
+// impl Drop for TestContext {
+// 	fn drop(&mut self) {
+// 		println!("Tear down");
+// 	}
+// }

@@ -45,6 +45,14 @@ pub fn run(listener: TcpListener, pool: r2d2::Pool<ConnectionManager<SqliteConne
 				"/user",
 				web::post().to(routes::create_user)
 			)
+			.route(
+				"/user/{username}",
+				web::get().to(routes::get_user)
+			)
+			.route(
+				"/users",
+				web::get().to(routes::get_all_users)
+			)
 		})
 		.listen(listener)?
 		.run();

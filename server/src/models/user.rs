@@ -1,11 +1,11 @@
 use chrono::Utc;
 use diesel::prelude::*;
 use uuid::Uuid;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 use crate::schema::users;
 
-#[derive(Serialize, Queryable, Insertable)]
+#[derive(Serialize, Deserialize, Queryable, Insertable)]
 pub struct User {
 	pub id: String,
 	pub created_at: String,
