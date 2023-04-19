@@ -32,7 +32,7 @@ async fn create_user_returns_200_for_valid_data() {
 	assert_eq!(200, response.status().as_u16());
 
 	// Check the data made it to the database
-	let connection = &mut _ctx.establish_connection();
+	let connection = &mut _ctx.pool.get().expect("Failed to get connection from pool");
 	use schema::users::dsl::*;
 
 	let ninja_user = users
