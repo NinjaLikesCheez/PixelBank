@@ -3,8 +3,8 @@
 diesel::table! {
     users (id) {
         id -> Text,
-        username -> Text,
         created_at -> Text,
+        username -> Text,
         balance -> Integer,
         role -> Text,
     }

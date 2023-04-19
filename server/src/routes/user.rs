@@ -1,5 +1,6 @@
 use actix_web::{web, HttpResponse, error};
 use diesel::{QueryDsl, SqliteConnection, RunQueryDsl, r2d2};
+use serde_json::json;
 
 use crate::models::User;
 
@@ -36,6 +37,7 @@ pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> 
 	let user = User::new(body.username.clone(), body.balance, body.role.clone());
 
 	use crate::schema::users::dsl::*;
+
 	let rows_inserted = web::block(move || {
 		let mut connection = pool.get()
 			.expect("Failed to get connection from pool");
@@ -45,9 +47,10 @@ pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> 
 			.execute(&mut connection)
 			.expect("Couldn't insert user")
 	})
-	.await
-	.map_err(error::ErrorInternalServerError);
+	.await;
 
-	// Request is fine, create user and store it
-	HttpResponse::Ok().json(format!("{:?}", rows_inserted))
+	match rows_inserted {
+		Ok(rows) => HttpResponse::Ok().json(format!("{:?}", rows)),
+		Err(err) => HttpResponse::Conflict().json(json!({"error": err.to_string()})),
+	}
 }
