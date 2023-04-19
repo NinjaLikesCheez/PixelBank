@@ -1,8 +1,7 @@
 use actix_web::{web, HttpResponse};
-use serde_json::json;
 
 #[derive(serde::Deserialize)]
-pub struct FormData {
+pub struct UserData {
 	pub username: String,
 	pub balance: i32,
 	pub role: String
@@ -12,7 +11,7 @@ async fn user_exists(username: &String) -> bool {
 	false
 }
 
-pub async fn create_user(body: web::Json<FormData>) -> HttpResponse {
+pub async fn create_user(body: web::Json<UserData>) -> HttpResponse {
 	// Can't create a user that already exists
 	if user_exists(&body.username).await {
 		return HttpResponse::Conflict().finish();
@@ -29,6 +28,5 @@ pub async fn create_user(body: web::Json<FormData>) -> HttpResponse {
 	}
 
 	// Request is fine, create user and store it
-
 	HttpResponse::Ok().finish()
 }
