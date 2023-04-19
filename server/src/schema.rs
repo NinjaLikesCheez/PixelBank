@@ -6,6 +6,6 @@ diesel::table! {
         username -> Text,
         created_at -> Text,
         balance -> Integer,
-        role -> Integer,
+        role -> Text,
     }
 }

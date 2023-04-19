@@ -6,5 +6,5 @@ pub struct User {
 	pub username: String,
 	pub created_at: String,
 	pub balance: i32,
-	pub role: i32
+	pub role: String
 }
