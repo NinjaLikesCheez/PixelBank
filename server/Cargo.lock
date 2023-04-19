@@ -1603,6 +1603,7 @@ dependencies = [
  "actix-web",
  "chrono",
  "config",
+ "derive_more",
  "diesel",
  "dotenvy",
  "env_logger",

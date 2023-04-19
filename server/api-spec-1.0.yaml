@@ -99,6 +99,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+# TODO: Create API Error response thing and use it here
+        '403':
+          description: Forbidden
         '409':
           description: Resource already exists
           content:

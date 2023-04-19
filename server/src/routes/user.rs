@@ -1,6 +1,7 @@
-use actix_web::{web, HttpResponse, error};
-use diesel::{QueryDsl, SqliteConnection, RunQueryDsl, r2d2};
-use serde_json::json;
+use actix_web::{web, HttpResponse, error::{self}, http::{StatusCode}, Responder};
+use diesel::{SqliteConnection, RunQueryDsl, r2d2};
+use serde::Serialize;
+use derive_more::{Display, Error};
 
 use crate::models::User;
 
@@ -14,30 +15,57 @@ pub struct UserData {
 	pub role: String
 }
 
-async fn user_exists(username: &String) -> bool {
-	username.is_empty()
+#[derive(Serialize)]
+struct APIError {
+	error: String
 }
 
-pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> HttpResponse {
-	// Can't create a user that already exists
-	if user_exists(&body.username).await {
-		return HttpResponse::Conflict().finish();
+#[derive(Debug, Display, Error)]
+pub enum UserError {
+	#[display(fmt = "User already exists")]
+	UserExistsError,
+
+	#[display(fmt = "Admin accounts cannot be created via API")]
+	CantCreateAdminError,
+
+	#[display(fmt = "New user balance cannot be below zero")]
+	NewUserBalanceTooLow,
+
+	#[display(fmt = "An internal error occurred. Please feed the maintainers")]
+	InternalError
+}
+
+impl error::ResponseError for UserError {
+	fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
+			HttpResponse::build(self.status_code())
+				.json(APIError { error: self.to_string() })
 	}
 
+	fn status_code(&self) -> StatusCode {
+		match *self {
+			UserError::InternalError => StatusCode::BAD_REQUEST,
+			UserError::NewUserBalanceTooLow => StatusCode::BAD_REQUEST,
+
+			UserError::UserExistsError => StatusCode::CONFLICT,
+			UserError::CantCreateAdminError => StatusCode::FORBIDDEN,
+		}
+	}
+}
+
+pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> Result<HttpResponse, UserError> {
 	// Admin accounts cannot be created via the REST API
 	if body.role == "admin" {
-		return HttpResponse::Forbidden().finish();
+		return Err(UserError::CantCreateAdminError);
 	}
 
 	// Don't owe us before you're part of us
 	if body.balance < 0 {
-		return HttpResponse::Forbidden().finish();
+		return Err(UserError::NewUserBalanceTooLow);
 	}
 
 	let user = User::new(body.username.clone(), body.balance, body.role.clone());
 
 	use crate::schema::users::dsl::*;
-
 	let rows_inserted = web::block(move || {
 		let mut connection = pool.get()
 			.expect("Failed to get connection from pool");
@@ -47,10 +75,9 @@ pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> 
 			.execute(&mut connection)
 			.expect("Couldn't insert user")
 	})
-	.await;
+	.await
+	.map_err(|_e| UserError::UserExistsError)?;
 
-	match rows_inserted {
-		Ok(rows) => HttpResponse::Ok().json(format!("{:?}", rows)),
-		Err(err) => HttpResponse::Conflict().json(json!({"error": err.to_string()})),
-	}
+	// TODO: Ensure user was stored by returning the user from the database and returning it - Ok(web::Json(user))
+	Ok(HttpResponse::Ok().finish())
 }
