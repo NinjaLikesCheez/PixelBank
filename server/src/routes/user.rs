@@ -1,4 +1,10 @@
-use actix_web::{web, HttpResponse};
+use actix_web::{web, HttpResponse, error};
+use diesel::{QueryDsl, SqliteConnection, RunQueryDsl, r2d2};
+
+use crate::models::User;
+
+// TODO: move to database module
+type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
 
 #[derive(serde::Deserialize)]
 pub struct UserData {
@@ -8,10 +14,10 @@ pub struct UserData {
 }
 
 async fn user_exists(username: &String) -> bool {
-	false
+	username.is_empty()
 }
 
-pub async fn create_user(body: web::Json<UserData>) -> HttpResponse {
+pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> HttpResponse {
 	// Can't create a user that already exists
 	if user_exists(&body.username).await {
 		return HttpResponse::Conflict().finish();
@@ -27,6 +33,21 @@ pub async fn create_user(body: web::Json<UserData>) -> HttpResponse {
 		return HttpResponse::Forbidden().finish();
 	}
 
+	let user = User::new(body.username.clone(), body.balance, body.role.clone());
+
+	use crate::schema::users::dsl::*;
+	let rows_inserted = web::block(move || {
+		let mut connection = pool.get()
+			.expect("Failed to get connection from pool");
+
+		diesel::insert_into(users)
+			.values(&user)
+			.execute(&mut connection)
+			.expect("Couldn't insert user")
+	})
+	.await
+	.map_err(error::ErrorInternalServerError);
+
 	// Request is fine, create user and store it
-	HttpResponse::Ok().finish()
+	HttpResponse::Ok().json(format!("{:?}", rows_inserted))
 }
