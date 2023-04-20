@@ -16,7 +16,7 @@ pub struct User {
 
 impl User {
 		pub fn new(username: String, balance: i32, role: String) -> Self {
-			User {
+			Self {
 				id: Uuid::new_v4().to_string(),
 				created_at: Utc::now().to_rfc3339(),
 				username,

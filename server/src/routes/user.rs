@@ -43,17 +43,19 @@ impl error::ResponseError for UserError {
 
 	fn status_code(&self) -> StatusCode {
 		match *self {
-			UserError::InternalError => StatusCode::BAD_REQUEST,
-			UserError::NewUserBalanceTooLow => StatusCode::BAD_REQUEST,
+			Self::InternalError => StatusCode::BAD_REQUEST,
+			Self::NewUserBalanceTooLow => StatusCode::BAD_REQUEST,
 
-			UserError::NoSuchUser => StatusCode::NOT_FOUND,
-			UserError::UserExistsError => StatusCode::CONFLICT,
-			UserError::CantCreateAdminError => StatusCode::FORBIDDEN,
+			Self::NoSuchUser => StatusCode::NOT_FOUND,
+			Self::UserExistsError => StatusCode::CONFLICT,
+			Self::CantCreateAdminError => StatusCode::FORBIDDEN,
 		}
 	}
 }
 
 pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> Result<HttpResponse, UserError> {
+	use crate::schema::users::dsl::*;
+
 	// Admin accounts cannot be created via the REST API
 	if body.role == "admin" {
 		return Err(UserError::CantCreateAdminError);
@@ -63,8 +65,6 @@ pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> 
 	if body.balance < 0 {
 		return Err(UserError::NewUserBalanceTooLow);
 	}
-
-	use crate::schema::users::dsl::*;
 
 	let user = web::block(move || {
 		let mut connection = pool.get()
@@ -99,7 +99,7 @@ pub async fn get_user(path: web::Path<String>,  pool: web::Data<DbPool>) -> Resu
 			.expect("Failed to get connection from pool");
 
 		users
-			.filter(username.eq(username.clone()))
+			.filter(username.eq(username))
 			.first::<User>(&mut connection)
 			.expect("Error fetching user")
 	})
