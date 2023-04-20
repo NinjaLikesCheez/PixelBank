@@ -6,7 +6,7 @@ pub struct Settings {
 
 #[derive(serde::Deserialize)]
 pub struct DatabaseSettings {
-	pub url: String,
+	pub path: String,
 }
 
 pub fn get_configuration() -> Result<Settings, config::ConfigError> {

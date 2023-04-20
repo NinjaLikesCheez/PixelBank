@@ -30,6 +30,49 @@ paths:
         '200':
           description: OK
   ### USERS
+  /user/:
+    post:
+      summary: Create new user
+      description: Create a new user
+      tags:
+        - User
+      requestBody:
+        description: |
+          Details of the user to create.
+
+          Note:
+
+          * Users cannot be created with a negative balance
+          * Admin users cannot be created via the API
+        content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUser'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid user object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+# TODO: Create API Error response thing and use it here
+        '403':
+          description: Forbidden
+        '409':
+          description: Resource already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+
   /user/{userID}:
     parameters:
         - name: username
@@ -51,82 +94,6 @@ paths:
                 $ref: '#/components/schemas/User'
         '404':
           description: No User found
-    put:
-      summary: Update a user
-      description: Updates the details of a User. Note, this will explicitly ignore balance.
-      tags:
-        - User
-      requestBody:
-        description: Update a User
-        content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        required: true
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          description: Invalid user Identifier
-        '404':
-          description: User not found
-    post:
-      summary: Add a new user
-      description: Create a new user
-      tags:
-        - User
-      requestBody:
-        description: Details of the user to create
-        content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        required: true
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          description: Invalid user object
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '409':
-          description: Resource already exists
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-  /user/{userID}/balance:
-    parameters:
-    - name: username
-      in: path
-      required: true
-      schema:
-        type: string
-    get:
-      summary: Fetches user balance
-      description: Returns the balance of a User
-      tags:
-        - User
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Balance'
-        '404':
-          description: No User found
-
   /users:
     get:
       tags:
@@ -232,25 +199,37 @@ components:
       description: Username of the user
       example: testuser123
 
+    CreateUser:
+      type: object
+      properties:
+        username:
+          $ref: '#/components/schemas/Username'
+        balance:
+            type: number
+            format: int64
+            description: User's current balance, in cents
+            example: 1337
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    UserRole:
+      type: string
+      enum:
+        - member
+        - guest
+        - friend
+        - admin
+      description: User's current role
+      example: member
+
     User:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/Username'
-        balance:
-          type: number
-          format: int64
-          description: User's current balance, in cents
-          example: 1337
-        role:
           type: string
-          enum:
-            - member
-            - guest
-            - friend
-            - admin
-          description: User's current role
-          example: member
+          description: UUID of the User
+      allOf:
+        - $ref: '#/components/schemas/CreateUser'
 
     Users:
       type: array
