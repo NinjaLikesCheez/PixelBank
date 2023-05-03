@@ -9,3 +9,14 @@ diesel::table! {
         role -> Text,
     }
 }
+
+diesel::table! {
+    transactions (id) {
+        id -> Integer,
+        account -> Text,
+        created_at -> Text,
+        kind -> Text,
+        mutation -> Float,
+        recipient -> Text,
+    }
+}
