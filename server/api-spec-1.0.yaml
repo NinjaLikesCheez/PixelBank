@@ -13,6 +13,8 @@ servers:
 tags:
   - name: User
     description: Interact with Users of the Bank
+  - name: Products
+    description: Interact with Products of the Bank
   - name: Admin
     description: Administrate the bank
   - name: Transactions
@@ -108,6 +110,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/Users'
   ### END USERS
+
+  ## PRODUCTS
+  /products:
+    get:
+      summary: Fetches products
+      description: Fetches a list of product details
+      tags:
+        - Products
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Products'
+
   ### TRANSACTIONS
   /txn/spend:
     post:
@@ -296,3 +314,26 @@ components:
             - cash
             - card
             - ideal
+
+    Product:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of product
+          example: Club Mate
+        identifier:
+          type: string
+          description: Identifier of the product, normally a UPC number
+          example: 4029764001807
+        has_deposit:
+          type: boolean
+          description: Does this product have a deposit (statiegeld) or similar
+        price:
+          type: integer
+          description: Price of the product, in cents
+
+    Products:
+      type: array
+      items:
+        $ref: '#/components/schemas/Product'

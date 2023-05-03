@@ -1,0 +1,5 @@
+products:
+  - name: Club Mate
+    price: 100
+    id: 4029764001807
+    has_deposit: true
