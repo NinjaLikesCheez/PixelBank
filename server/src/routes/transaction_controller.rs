@@ -192,7 +192,7 @@ async fn execute_transaction(transaction: Transaction, pool: web::Data<DbPool>) 
 		.first::<User>(&mut connection)
 		.expect("Error fetching user");
 
-		//TODO: Wrap this in a transaction
+		//TODO: Wrap this in a transaction. Currently this may cause the user to lose or gain money if one or more queries fail.
 		if transaction.kind == TransactionKind::Transfer.to_string() {
 			let recipient_user = users
 				.filter(username.eq(&transaction.recipient))
