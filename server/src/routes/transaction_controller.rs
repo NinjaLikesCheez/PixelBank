@@ -31,6 +31,7 @@ pub enum TransactionError {
 	NoTransactions,
 	BadTransactionId,
 	InternalServerError, //TODO: Find a way to do general errors that are usable over more than a single controller
+	BadBalance
 }
 
 impl error::ResponseError for TransactionError {
@@ -44,6 +45,7 @@ impl error::ResponseError for TransactionError {
 			Self::NoTransactions => StatusCode::NOT_FOUND,
 			Self::BadTransactionId => StatusCode::BAD_REQUEST,
 			Self::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
+			Self::BadBalance => StatusCode::BAD_REQUEST
 		}
 	}
 }
@@ -106,6 +108,10 @@ pub async fn get_transaction(path: web::Path<String>,  pool: web::Data<DbPool>) 
 pub async fn deposit(path: web::Path<String>, body: web::Json<SoloTransaction>, pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
+	
+	if transaction.balance <= 0.0 {
+		return Err(TransactionError::BadBalance);
+	}
 
 	let new_transaction = Transaction::new(user_id, TransactionKind::Deposit, (transaction.balance * 100.0) as i32, "".to_string());
 
@@ -119,6 +125,10 @@ pub async fn withdrawal(path: web::Path<String>, body: web::Json<SoloTransaction
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
 
+	if transaction.balance >= 0.0 {
+		return Err(TransactionError::BadBalance);
+	}
+
 	let new_transaction = Transaction::new(user_id, TransactionKind::Withdrawal, (transaction.balance * 100.0) as i32, "".to_string());
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
@@ -127,9 +137,13 @@ pub async fn withdrawal(path: web::Path<String>, body: web::Json<SoloTransaction
 }
 
 #[post("/user/{userId}/transactions/transfer")]
-pub async fn transfer(path: web::Path<String>, body: web::Json<SoloTransaction>, pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
+pub async fn transfer(path: web::Path<String>, body: web::Json<DuoTransaction>, pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
+
+	if transaction.balance >= 0.0 {
+		return Err(TransactionError::BadBalance);
+	}
 
 	let new_transaction = Transaction::new(user_id, TransactionKind::Transfer, (transaction.balance * 100.0) as i32, "".to_string());
 
@@ -144,6 +158,10 @@ pub async fn purchase(path: web::Path<String>, body: web::Json<SoloTransaction>,
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
 
+	if transaction.balance >= 0.0 {
+		return Err(TransactionError::BadBalance);
+	}
+
 	let new_transaction = Transaction::new(user_id, TransactionKind::Purchase, (transaction.balance * 100.0) as i32, "".to_string());
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
@@ -151,7 +169,7 @@ pub async fn purchase(path: web::Path<String>, body: web::Json<SoloTransaction>,
 	Ok(HttpResponse::Ok().json(inserted_transaction))
 }
 
-//Todo: Move this to a database module, since you'll have to touch this for products sales too :)
+//TODO: Move this to a database module, since you'll have to touch this for products sales too :)
 async fn execute_transaction(transaction: Transaction, pool: web::Data<DbPool>) -> Result<Transaction, TransactionError> {
 	//TODO: Find a way to map the blockingerrors properly. I want the user to know what went wrong.
 	web::block(move || {
@@ -164,6 +182,19 @@ async fn execute_transaction(transaction: Transaction, pool: web::Data<DbPool>) 
 		.filter(username.eq(username))
 		.first::<User>(&mut connection)
 		.expect("Error fetching user");
+
+		//TODO: Wrap this in a transaction
+		if transaction.kind == TransactionKind::Transfer.to_string() {
+			let recipient_user = users
+				.filter(username.eq(&transaction.recipient))
+				.first::<User>(&mut connection)
+				.expect("Error fetching recipient");
+
+			diesel::update(&recipient_user)
+				.set(balance.eq(recipient_user.balance - transaction.mutation))
+				.execute(&mut connection)
+				.expect("Error updating recipient balance");
+		}
 
 		diesel::insert_into(transactions)
 			.values(&transaction)
