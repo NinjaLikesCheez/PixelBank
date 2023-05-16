@@ -16,7 +16,7 @@ diesel::table! {
         account -> Text,
         created_at -> Text,
         kind -> Text,
-        mutation -> Float,
+        mutation -> Integer,
         recipient -> Text,
     }
 }
