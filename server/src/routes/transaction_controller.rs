@@ -192,34 +192,33 @@ async fn execute_transaction(transaction: Transaction, pool: web::Data<DbPool>) 
 		.first::<User>(&mut connection)
 		.expect("Error fetching user");
 
-		//TODO: Wrap this in a transaction. Currently this may cause the user to lose or gain money if one or more queries fail.
-		if transaction.kind == TransactionKind::Transfer.to_string() {
-			let recipient_user = users
-				.filter(username.eq(&transaction.recipient))
-				.first::<User>(&mut connection)
-				.expect("Error fetching recipient");
+		connection.transaction(|connection| {
+			if transaction.kind == TransactionKind::Transfer.to_string() {
+				let recipient_user = users
+					.filter(username.eq(&transaction.recipient))
+					.first::<User>(connection)
+					.expect("Error fetching recipient");
 
-			diesel::update(&recipient_user)
-				.set(balance.eq(recipient_user.balance - transaction.mutation))
-				.execute(&mut connection)
-				.expect("Error updating recipient balance");
-		}
+				diesel::update(&recipient_user)
+					.set(balance.eq(recipient_user.balance - transaction.mutation))
+					.execute(connection)
+					.expect("Error updating recipient balance");
+			}
 
-		diesel::insert_into(transactions)
-			.values(&transaction)
-			.execute(&mut connection)
-			.expect("Error inserting new transaction");
+			diesel::insert_into(transactions)
+				.values(&transaction)
+				.execute(connection)
+				.expect("Error inserting new transaction");
 
-		diesel::update(&user)
-			.set(balance.eq(user.balance + transaction.mutation))
-			.execute(&mut connection)
-			.expect("Error updating user balance");
+			diesel::update(&user)
+				.set(balance.eq(user.balance + transaction.mutation))
+				.execute(connection)
+				.expect("Error updating user balance");
 
-		transactions
-			.order(crate::schema::transactions::dsl::id.desc())
-			.first::<Transaction>(&mut connection)
-			.expect("Error loading new transaction")
-
+			transactions
+				.order(crate::schema::transactions::dsl::id.desc())
+				.first::<Transaction>(connection)
+		}).expect("Error executing transaction")
 	})
 	.await
 	.map_err(|_e| TransactionError::InternalServerError)
