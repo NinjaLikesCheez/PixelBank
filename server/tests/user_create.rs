@@ -14,7 +14,7 @@ async fn create_user(_ctx: &TestContext) -> reqwest::Response {
 	});
 
 	_ctx.client
-		.post(&format!("{}/user", _ctx.address))
+		.post(&format!("{}/users", _ctx.address))
 		.json(&json)
 		.send()
 		.await
