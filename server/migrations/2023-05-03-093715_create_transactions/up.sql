@@ -3,8 +3,8 @@ CREATE TABLE transactions (
     user_id TEXT NOT NULL,
 	created_at TEXT NOT NULL,
     kind TEXT NOT NULL,
-	balance REAL NOT NULL,
+	balance INTEGER NOT NULL,
 	recipient_id TEXT,
-	FOREIGN KEY (user) REFERENCES users (id),
-	FOREIGN KEY (recipient) REFERENCES users (id)
+	FOREIGN KEY (user_id) REFERENCES users (id),
+	FOREIGN KEY (recipient_id) REFERENCES users (id)
 )

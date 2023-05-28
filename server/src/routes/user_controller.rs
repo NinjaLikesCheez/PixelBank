@@ -53,6 +53,7 @@ impl error::ResponseError for UserError {
 	}
 }
 
+#[post("/users")]
 pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> Result<HttpResponse, UserError> {
 	use crate::schema::users::dsl::*;
 
@@ -88,6 +89,8 @@ pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> 
 	Ok(HttpResponse::Ok().json(user))
 }
 
+
+#[get("/users/{username}")]
 pub async fn get_user(path: web::Path<String>,  pool: web::Data<DbPool>) -> Result<HttpResponse, UserError> {
 	let username = path.into_inner();
 
@@ -109,6 +112,7 @@ pub async fn get_user(path: web::Path<String>,  pool: web::Data<DbPool>) -> Resu
 	Ok(HttpResponse::Ok().json(user))
 }
 
+#[get("/users")]
 pub async fn get_all_users(pool: web::Data<DbPool>) -> Result<HttpResponse, UserError> {
 	let users = web::block(move || {
 		use crate::schema::users::dsl::*;

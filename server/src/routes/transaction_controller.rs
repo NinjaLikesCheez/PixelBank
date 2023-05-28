@@ -61,7 +61,7 @@ impl error::ResponseError for TransactionError {
 
 //Getting transactions
 
-#[get("/user/{userId}/transactions")]
+#[get("/users/{userId}/transactions")]
 pub async fn get_user_transactions(path: web::Path<String>,  pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
 	let user_id = path.into_inner();
 
@@ -113,7 +113,7 @@ pub async fn get_transaction(path: web::Path<String>,  pool: web::Data<DbPool>) 
 //Creating transactions
 //TODO: Can we replace these with Macros?
 
-#[post("/user/{userId}/transactions/deposit")]
+#[post("/users/{userId}/transactions/deposit")]
 pub async fn deposit(path: web::Path<String>, body: web::Json<SoloTransaction>, pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
@@ -129,7 +129,7 @@ pub async fn deposit(path: web::Path<String>, body: web::Json<SoloTransaction>, 
 	Ok(HttpResponse::Ok().json(inserted_transaction))
 }
 
-#[post("/user/{userId}/transactions/withdrawal")]
+#[post("/users/{userId}/transactions/withdrawal")]
 pub async fn withdrawal(path: web::Path<String>, body: web::Json<SoloTransaction>, pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
@@ -145,7 +145,7 @@ pub async fn withdrawal(path: web::Path<String>, body: web::Json<SoloTransaction
 	Ok(HttpResponse::Ok().json(inserted_transaction))
 }
 
-#[post("/user/{userId}/transactions/transfer")]
+#[post("/users/{userId}/transactions/transfer")]
 pub async fn transfer(path: web::Path<String>, body: web::Json<DuoTransaction>, pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
@@ -162,7 +162,7 @@ pub async fn transfer(path: web::Path<String>, body: web::Json<DuoTransaction>, 
 }
 
 //More for completeness.
-#[post("/user/{userId}/transactions/purchase")]
+#[post("/users/{userId}/transactions/purchase")]
 pub async fn purchase(path: web::Path<String>, body: web::Json<SoloTransaction>, pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
