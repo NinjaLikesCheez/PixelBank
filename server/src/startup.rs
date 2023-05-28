@@ -5,8 +5,6 @@ use diesel::{SqliteConnection, r2d2};
 use serde_json::json;
 use std::net::TcpListener;
 
-use crate::routes;
-
 // Ideas on making this better:
 // https://github.com/serde-rs/json/issues/759???
 // https://www.reddit.com/r/rust/comments/doexmf/gracefully_handling_json_validation_errors_with/
@@ -36,22 +34,6 @@ pub fn run(listener: TcpListener, pool: r2d2::Pool<ConnectionManager<SqliteConne
 			.app_data(web::Data::new(pool.clone()))
 			.app_data(
 				web::JsonConfig::default().error_handler(json_decoding_error_handler)
-			)
-			.route(
-				"/ping",
-				web::get().to(routes::ping)
-			)
-			.route(
-				"/user",
-				web::post().to(routes::create_user)
-			)
-			.route(
-				"/user/{username}",
-				web::get().to(routes::get_user)
-			)
-			.route(
-				"/users",
-				web::get().to(routes::get_all_users)
 			)
 		})
 		.listen(listener)?
