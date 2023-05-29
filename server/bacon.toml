@@ -54,14 +54,16 @@ command = [
 
 # As an idea, if we want to keep our code base super clean, we could 
 # use this job. It does enforce a lot of rules, though, and it might
-# be too much for a small project like this :) -Aiko
+# be too much for a small project like this 
+# It's like regular clippy, but worse :) -Aiko
 [jobs.bonzibuddy]
 command = [
     "cargo", "clippy",
-    "--pedantic",
-    "--nursery",
     "--all-targets",
     "--color", "always",
+    "--",
+    "-W", "clippy::pedantic",
+    "-W", "clippy::nursery",
 ]
 need_stdout = true
 allow_warnings = true
