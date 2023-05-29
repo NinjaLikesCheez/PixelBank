@@ -2,6 +2,7 @@ use actix_web::{web, App, HttpServer, error, HttpRequest, HttpResponse};
 use actix_web::dev::Server;
 use diesel::r2d2::ConnectionManager;
 use diesel::{SqliteConnection, r2d2};
+use log::info;
 use serde_json::json;
 use std::net::TcpListener;
 
@@ -42,7 +43,7 @@ pub fn run(listener: TcpListener, pool: r2d2::Pool<ConnectionManager<SqliteConne
 		.listen(listener)?
 		.run();
 
-	println!("Server started successfully");
+	info!("✔️ Server started successfully");
 
 	Ok(server)
 }
