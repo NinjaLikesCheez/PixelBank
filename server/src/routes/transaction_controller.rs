@@ -59,6 +59,15 @@ impl error::ResponseError for TransactionError {
 	}
 }
 
+pub fn actix_config(cfg: &mut actix_web::web::ServiceConfig) {
+	cfg.service(get_user_transactions);
+	cfg.service(get_transaction);
+	cfg.service(deposit);
+	cfg.service(withdrawal);
+	cfg.service(transfer);
+	cfg.service(purchase);
+}
+
 //Getting transactions
 
 #[get("/users/{userId}/transactions")]

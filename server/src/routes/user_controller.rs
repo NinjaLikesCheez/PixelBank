@@ -53,6 +53,12 @@ impl error::ResponseError for UserError {
 	}
 }
 
+pub fn actix_config(cfg: &mut actix_web::web::ServiceConfig) {
+	cfg.service(get_user);
+	cfg.service(get_all_users);
+	cfg.service(create_user);
+}
+
 #[post("/users")]
 pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> Result<HttpResponse, UserError> {
 	use crate::schema::users::dsl::*;

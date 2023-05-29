@@ -35,9 +35,14 @@ pub fn run(listener: TcpListener, pool: r2d2::Pool<ConnectionManager<SqliteConne
 			.app_data(
 				web::JsonConfig::default().error_handler(json_decoding_error_handler)
 			)
+			.configure(crate::routes::ping_controller::actix_config)
+			.configure(crate::routes::user_controller::actix_config)
+			.configure(crate::routes::transaction_controller::actix_config)
 		})
 		.listen(listener)?
 		.run();
+
+	println!("Server started successfully");
 
 	Ok(server)
 }
