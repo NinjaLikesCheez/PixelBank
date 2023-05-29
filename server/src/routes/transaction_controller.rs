@@ -68,7 +68,7 @@ pub fn actix_config(cfg: &mut actix_web::web::ServiceConfig) {
 
 #[get("/users/{userId}/transactions")]
 pub async fn get_user_transactions(path: web::Path<String>,  pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
-	let user_id = path.into_inner();
+	let user_id_in = path.into_inner();
 
 	let user_transactions: Vec<Transaction> = web::block(move || {
 		use crate::schema::transactions::dsl::*;
@@ -76,7 +76,7 @@ pub async fn get_user_transactions(path: web::Path<String>,  pool: web::Data<DbP
 			.expect("Failed to get connection from pool");
 
 		transactions
-			.filter(account.eq(user_id))
+			.filter(user_id.eq(user_id_in))
 			.load::<Transaction>(&mut connection)
 			.expect("Error fetching transactions")
 	})
@@ -200,7 +200,7 @@ async fn execute_transaction(transaction: Transaction, pool: web::Data<DbPool>) 
 		connection.transaction(|connection| {
 			if transaction.kind == TransactionKind::Transfer.to_string() {
 				let recipient_user = users
-					.filter(username.eq(&transaction.recipient))
+					.filter(username.eq(&transaction.recipient_id))
 					.first::<User>(connection)
 					.expect("Error fetching recipient");
 
@@ -210,15 +210,15 @@ async fn execute_transaction(transaction: Transaction, pool: web::Data<DbPool>) 
 					.expect("Error updating recipient balance");
 			}
 
-			diesel::insert_into(transactions)
-				.values(&transaction)
-				.execute(connection)
-				.expect("Error inserting new transaction");
-
 			diesel::update(&user)
 				.set(balance.eq(user.balance + transaction.mutation))
 				.execute(connection)
 				.expect("Error updating user balance");
+
+			diesel::insert_into(transactions)
+				.values(&transaction)
+				.execute(connection)
+				.expect("Error inserting new transaction");
 
 			transactions
 				.order(crate::schema::transactions::dsl::id.desc())

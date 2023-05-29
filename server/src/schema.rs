@@ -13,10 +13,10 @@ diesel::table! {
 diesel::table! {
     transactions (id) {
         id -> Integer,
-        account -> Text,
+        user_id -> Text,
         created_at -> Text,
         kind -> Text,
         mutation -> Integer,
-        recipient -> Text,
+        recipient_id -> Text,
     }
 }

@@ -5,7 +5,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 extern crate diesel_migrations;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use serde_json::json;
-use server::models::User;
+use server::models::{User, Transaction};
 use server::schema;
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 
@@ -69,17 +69,28 @@ impl TestContext {
 			.expect("No results returned from database")
 	}
 
-	pub async fn create_transaction(_ctx: &TestContext, user_id: &str) -> reqwest::Response {
+	pub async fn create_transaction(_ctx: &TestContext, user_id_in: &str) -> Transaction {
 		let json = json!({
 			"mutation": 1.00
 		});
 
 		_ctx.client
-			.post(&format!("{}/users/{}/transactions/deposit", _ctx.address, user_id))
+			.post(&format!("{}/users/{}/transactions/deposit", _ctx.address, user_id_in))
 			.json(&json)
 			.send()
 			.await
-			.expect("Failed to execute request")
+			.expect("Failed to execute request");
+
+		let connection = &mut _ctx.pool.get().expect("Failed to get connection from pool");
+		use schema::transactions::dsl::*;
+	
+		transactions
+			.filter(user_id.eq(user_id_in))
+			.limit(1)
+			.load::<Transaction>(connection)
+			.expect("Error loading transaction")
+			.pop()
+			.expect("No results returned from database")
 	}
 	
 }
