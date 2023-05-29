@@ -12,16 +12,12 @@ type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
 
 #[derive(Deserialize)]
 pub struct SoloTransaction {
-	pub username: String,
 	pub mutation: f32,
-	pub role: String
 }
 
 #[derive(Deserialize)]
 pub struct DuoTransaction {
-	pub username: String,
 	pub mutation: f32,
-	pub role: String,
 	pub recipient: String
 }
 

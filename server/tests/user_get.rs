@@ -1,35 +1,17 @@
 use chrono::{Utc, DateTime};
-use serde_json::json;
 use server::{models::*};
 
 pub mod test_context;
 use test_context::*;
 
-async fn create_user(_ctx: &TestContext) -> reqwest::Response {
-	let json = json!({
-		"username": "ninja",
-		"balance": 0,
-		"role": "member",
-	});
-
-	_ctx.client
-		.post(&format!("{}/users", _ctx.address))
-		.json(&json)
-		.send()
-		.await
-		.expect("Failed to execute request")
-}
-
 #[tokio::test]
 async fn get_user_returns_200_for_existing_user() {
 	let _ctx = TestContext::new();
 
-	let response = create_user(&_ctx).await;
-
-	assert_eq!(200, response.status());
+	TestContext::create_user(&_ctx, "Ninja", 0, "member").await;
 
 	let response = _ctx.client
-		.get(format!("{}/user/ninja", _ctx.address))
+		.get(format!("{}/users/ninja", _ctx.address))
 		.send()
 		.await
 		.expect("Failed to fetch user");
@@ -39,7 +21,7 @@ async fn get_user_returns_200_for_existing_user() {
 		.await
 		.expect("Failed to decode to User model");
 
-	assert_eq!("ninja", user.username);
+	assert_eq!("Ninja", user.username);
 	assert_eq!(0, user.balance);
 	assert_eq!("member", user.role);
 
@@ -56,7 +38,7 @@ async fn get_user_returns_404_for_nonexistent_user() {
 	let _ctx = TestContext::new();
 
 	let response = _ctx.client
-		.get(format!("{}/user/ninja", _ctx.address))
+		.get(format!("{}/users/ninja", _ctx.address))
 		.send()
 		.await
 		.expect("Failed to fetch user")
@@ -71,9 +53,7 @@ async fn get_user_returns_404_for_nonexistent_user() {
 async fn get_all_users_returns_200() {
 	let _ctx = TestContext::new();
 
-	let response = create_user(&_ctx).await;
-
-	assert_eq!(200, response.status());
+	TestContext::create_user(&_ctx, "Ninja", 100, "member").await;
 
 	let response = _ctx.client
 		.get(format!("{}/users", _ctx.address))
@@ -90,5 +70,5 @@ async fn get_all_users_returns_200() {
 
 	assert_eq!(users.len(), 1);
 	let ninja_user = users.first().unwrap();
-	assert_eq!(ninja_user.username, "ninja");
+	assert_eq!(ninja_user.username, "Ninja");
 }
