@@ -94,7 +94,7 @@ pub async fn get_user_transactions(path: web::Path<String>,  pool: web::Data<DbP
 pub async fn get_transaction(path: web::Path<String>,  pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
 	let transaction_id = path.into_inner().parse::<i32>().map_err(|_e| TransactionError::BadTransactionId)?;
 
-	let user_transactions: Vec<Transaction> = web::block(move || {
+	let transaction: Transaction = web::block(move || {
 		use crate::schema::transactions::dsl::*;
 		let mut connection = pool.get()
 			.map_err(|_e| TransactionError::NoTransactions)
@@ -106,13 +106,11 @@ pub async fn get_transaction(path: web::Path<String>,  pool: web::Data<DbPool>) 
 			.expect("Error fetching transaction")
 	})
 	.await
-	.map_err(|_e| TransactionError::InternalServerError)?;
+	.map_err(|_e| TransactionError::InternalServerError)?
+	.pop()
+	.ok_or(TransactionError::NoTransactions)?;
 
-	if user_transactions.is_empty() {
-		return Err(TransactionError::NoTransactions);
-	}
-
-	Ok(HttpResponse::Ok().json(user_transactions))
+	Ok(HttpResponse::Ok().json(transaction))
 }
 
 //Creating transactions

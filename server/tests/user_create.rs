@@ -61,7 +61,7 @@ async fn create_user_returns_422_when_data_is_invalid() {
 
 	for (body, error_message) in test_cases {
 		let response = client
-			.post(format!("{}/user", _ctx.address))
+			.post(format!("{}/users", _ctx.address))
 			.json(&body)
 			.send()
 			.await
@@ -104,7 +104,7 @@ async fn create_user_returns_400_when_balance_too_low() {
 	});
 
 	let response = _ctx.client
-		.post(&format!("{}/user", _ctx.address))
+		.post(&format!("{}/users", _ctx.address))
 		.json(&json)
 		.send()
 		.await
@@ -132,7 +132,7 @@ async fn create_user_returns_403_when_creating_admin() {
 	});
 
 	let response = _ctx.client
-		.post(&format!("{}/user", _ctx.address))
+		.post(&format!("{}/users", _ctx.address))
 		.json(&json)
 		.send()
 		.await

@@ -28,7 +28,8 @@ impl fmt::Display for TransactionKind {
 #[derive(Serialize, Deserialize, Queryable, QueryableByName, Insertable, ValidGrouping, Selectable)]
 #[diesel(table_name = transactions)]
 pub struct Transaction {
-    pub id: i32,
+    #[diesel(deserialize_as = i32)]
+    pub id: Option<i32>,
 	pub user_id: String,
 	pub created_at: String,
     pub kind: String,
@@ -39,7 +40,7 @@ pub struct Transaction {
 impl Transaction {
 	pub fn new(user_id: String, transaction_kind: TransactionKind, mutation: i32, recipient_id: Option<String>) -> Self {
 		Self {
-            id: 0,
+            id: None,
             user_id,
 	    	created_at: Utc::now().to_rfc3339(),
             kind: transaction_kind.to_string(),

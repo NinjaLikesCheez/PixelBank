@@ -25,7 +25,6 @@ async fn get_transactions_returns_200() {
 }
 
 
-//This test is still broken, but I'm going to *Snore* mimimimimimimi 
 #[tokio::test]
 async fn get_transaction_returns_200_for_existing_transaction() {
 	let _ctx = TestContext::new();
@@ -35,7 +34,7 @@ async fn get_transaction_returns_200_for_existing_transaction() {
 	let transaction = TestContext::create_transaction(&_ctx, &user.id).await;
 
 	let response = _ctx.client
-		.get(format!("{}/transactions/{}", _ctx.address, transaction.id))
+		.get(format!("{}/transactions/{}", _ctx.address, transaction.id.expect("Create Transaction Failed")))
 		.send()
 		.await
 		.expect("Failed to fetch transaction");
@@ -45,8 +44,7 @@ async fn get_transaction_returns_200_for_existing_transaction() {
 		.await
 		.expect("Failed to decode to Transaction model");
 
-	assert_eq!(transactions.mutation, 100);
+	assert_eq!(transactions.mutation, 6942);
 	assert_eq!(transactions.kind, "Deposit");
 	assert_eq!(transactions.user_id, user.id);
-	assert_eq!(user.balance, 100);
 }

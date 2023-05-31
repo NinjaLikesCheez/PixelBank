@@ -43,7 +43,7 @@ pub fn run(listener: TcpListener, pool: r2d2::Pool<ConnectionManager<SqliteConne
 		.listen(listener)?
 		.run();
 
-	info!("✔️ Server started successfully");
+	info!("✔️  Server started successfully");
 
 	Ok(server)
 }

@@ -70,27 +70,22 @@ impl TestContext {
 	}
 
 	pub async fn create_transaction(_ctx: &TestContext, user_id_in: &str) -> Transaction {
+		//Serde really doesn't like floats, so we're just not making it variable
 		let json = json!({
-			"mutation": 1.00
+			"mutation": 69.42
 		});
 
-		_ctx.client
+		let response = _ctx.client
 			.post(&format!("{}/users/{}/transactions/deposit", _ctx.address, user_id_in))
 			.json(&json)
 			.send()
 			.await
 			.expect("Failed to execute request");
 
-		let connection = &mut _ctx.pool.get().expect("Failed to get connection from pool");
-		use schema::transactions::dsl::*;
-	
-		transactions
-			.filter(user_id.eq(user_id_in))
-			.limit(1)
-			.load::<Transaction>(connection)
-			.expect("Error loading transaction")
-			.pop()
-			.expect("No results returned from database")
+		response
+			.json::<Transaction>()
+			.await
+			.expect("Failed to decode to Transaction model")
 	}
 	
 }
