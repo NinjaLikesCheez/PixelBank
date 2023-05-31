@@ -127,7 +127,7 @@ pub async fn deposit(path: web::Path<String>, body: web::Json<SoloTransaction>, 
 		return Err(TransactionError::BadNegativeMutation);
 	}
 
-	let new_transaction = Transaction::new(user_id, TransactionKind::Deposit, (transaction.mutation * 100.0) as i32, "".to_string());
+	let new_transaction = Transaction::new(user_id, TransactionKind::Deposit, (transaction.mutation * 100.0) as i32, None);
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
 
@@ -143,7 +143,7 @@ pub async fn withdrawal(path: web::Path<String>, body: web::Json<SoloTransaction
 		return Err(TransactionError::BadPositiveMutation);
 	}
 
-	let new_transaction = Transaction::new(user_id, TransactionKind::Withdrawal, (transaction.mutation * 100.0) as i32, "".to_string());
+	let new_transaction = Transaction::new(user_id, TransactionKind::Withdrawal, (transaction.mutation * 100.0) as i32, None);
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
 
@@ -159,7 +159,7 @@ pub async fn transfer(path: web::Path<String>, body: web::Json<DuoTransaction>, 
 		return Err(TransactionError::BadPositiveMutation);
 	}
 
-	let new_transaction = Transaction::new(user_id, TransactionKind::Transfer, (transaction.mutation * 100.0) as i32, "".to_string());
+	let new_transaction = Transaction::new(user_id, TransactionKind::Transfer, (transaction.mutation * 100.0) as i32, None);
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
 
@@ -176,7 +176,7 @@ pub async fn purchase(path: web::Path<String>, body: web::Json<SoloTransaction>,
 		return Err(TransactionError::BadPositiveMutation);
 	}
 
-	let new_transaction = Transaction::new(user_id, TransactionKind::Purchase, (transaction.mutation * 100.0) as i32, "".to_string());
+	let new_transaction = Transaction::new(user_id, TransactionKind::Purchase, (transaction.mutation * 100.0) as i32, None);
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
 
@@ -200,7 +200,7 @@ async fn execute_transaction(transaction: Transaction, pool: web::Data<DbPool>) 
 		connection.transaction(|connection| {
 			if transaction.kind == TransactionKind::Transfer.to_string() {
 				let recipient_user = users
-					.filter(username.eq(&transaction.recipient_id))
+					.filter(crate::schema::users::id.eq(transaction.recipient_id.clone().expect("No recipient id provided")))
 					.first::<User>(connection)
 					.expect("Error fetching recipient");
 

@@ -1,3 +1,5 @@
+PRAGMA foreign_keys = ON;
+
 CREATE TABLE transactions (
 	id INTEGER NOT NULL PRIMARY KEY,
     user_id TEXT NOT NULL,

@@ -1,5 +1,5 @@
 use chrono::Utc;
-use diesel::{Queryable, Insertable, expression::ValidGrouping, Selectable};
+use diesel::{Queryable, Insertable, expression::ValidGrouping, Selectable, QueryableByName};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -25,18 +25,19 @@ impl fmt::Display for TransactionKind {
 }
 
 //NOTE: Mutations are in cents and reflect the effect of the transaction on the account balance. This is done so with a simple sql query we can check the current balance of an account by summing all mutations for that account.
-#[derive(Serialize, Deserialize, Queryable, Insertable, ValidGrouping, Selectable)]
+#[derive(Serialize, Deserialize, Queryable, QueryableByName, Insertable, ValidGrouping, Selectable)]
+#[diesel(table_name = transactions)]
 pub struct Transaction {
     pub id: i32,
 	pub user_id: String,
 	pub created_at: String,
     pub kind: String,
 	pub mutation: i32,
-    pub recipient_id: String
+    pub recipient_id: Option<String>
 }
 
 impl Transaction {
-	pub fn new(user_id: String, transaction_kind: TransactionKind, mutation: i32, recipient_id: String) -> Self {
+	pub fn new(user_id: String, transaction_kind: TransactionKind, mutation: i32, recipient_id: Option<String>) -> Self {
 		Self {
             id: 0,
             user_id,
