@@ -1,11 +1,11 @@
 name: 🧹 Format Rust
 
-
-on: [push]
-# TODO: When done testing, replace with
-# on:
-#   push:
-#     main
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - **.rs
 
 env:
   CARGO_TERM_COLOR: always
