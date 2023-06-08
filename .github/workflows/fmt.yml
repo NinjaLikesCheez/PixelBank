@@ -1,0 +1,35 @@
+name: 🧹 Format Rust
+
+
+on: [push]
+# TODO: When done testing, replace with
+# on:
+#   push:
+#     main
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  Run-Cargo-Fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🫣 Check out current branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: 🛠️ Setup Rust Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt
+
+      - name: 🧹 Cargo Format
+        working-directory: server
+        run: cargo fmt
+
+      - name: 💍 Commit Version Change
+        run: |
+          git add .
+          git commit --amend --no-edit
+          git push
