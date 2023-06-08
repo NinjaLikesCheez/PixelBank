@@ -1,3 +1,5 @@
+use core::panic;
+
 use actix_web::{web, HttpResponse, error::{self}, http::{StatusCode}, post, get,};
 use diesel::{SqliteConnection, RunQueryDsl, r2d2};
 use serde::{Deserialize};
@@ -53,7 +55,7 @@ impl error::ResponseError for UserError {
 	}
 }
 
-pub fn actix_config(cfg: &mut actix_web::web::ServiceConfig) {
+pub fn build_user_controller(cfg: &mut actix_web::web::ServiceConfig) {
 	cfg.service(get_user);
 	cfg.service(get_all_users);
 	cfg.service(create_user);
@@ -79,6 +81,17 @@ pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> 
 
 		let user = User::new(body.username.clone(), body.balance, body.role.clone());
 
+		//Check is username already exists
+		let count:i64 = users
+			.filter(username.eq(body.username.clone()))
+			.count()
+			.get_result(&mut connection)
+			.expect("Couldn't get count of users with username");
+
+		if count > 0 {
+			panic!("User already exists"); //You get to have fun with this when we move to real error handling
+		}
+
 		diesel::insert_into(users)
 			.values(&user)
 			.execute(&mut connection)
@@ -96,11 +109,9 @@ pub async fn create_user(body: web::Json<UserData>, pool: web::Data<DbPool>) -> 
 }
 
 
-#[get("/users/{username}")]
+#[get("/users/{id}")]
 pub async fn get_user(path: web::Path<String>,  pool: web::Data<DbPool>) -> Result<HttpResponse, UserError> {
-	let username = path.into_inner();
-
-	println!("username: {}", username);
+	let in_id = path.into_inner();
 
 	let user = web::block(move || {
 		use crate::schema::users::dsl::*;
@@ -108,7 +119,27 @@ pub async fn get_user(path: web::Path<String>,  pool: web::Data<DbPool>) -> Resu
 			.expect("Failed to get connection from pool");
 
 		users
-			.filter(username.eq(username))
+			.filter(id.eq(in_id))
+			.first::<User>(&mut connection)
+			.expect("Error fetching user")
+	})
+	.await
+	.map_err(|_e| UserError::NoSuchUser)?;
+
+	Ok(HttpResponse::Ok().json(user))
+}
+
+#[get("/users/name/{username}")]
+pub async fn get_user_by_name(path: web::Path<String>,  pool: web::Data<DbPool>) -> Result<HttpResponse, UserError> {
+	let in_username = path.into_inner();
+
+	let user = web::block(move || {
+		use crate::schema::users::dsl::*;
+		let mut connection = pool.get()
+			.expect("Failed to get connection from pool");
+
+		users
+			.filter(username.eq(in_username))
 			.first::<User>(&mut connection)
 			.expect("Error fetching user")
 	})

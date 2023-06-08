@@ -1,5 +1,6 @@
 use actix_web::{web, HttpResponse, error::{self}, http::{StatusCode}, get, post};
 use diesel::{SqliteConnection, RunQueryDsl, r2d2};
+use log::debug;
 use serde::{Deserialize};
 use derive_more::{Display, Error};
 use diesel::prelude::*;
@@ -55,7 +56,7 @@ impl error::ResponseError for TransactionError {
 	}
 }
 
-pub fn actix_config(cfg: &mut actix_web::web::ServiceConfig) {
+pub fn build_transaction_controller(cfg: &mut actix_web::web::ServiceConfig) {
 	cfg.service(get_user_transactions);
 	cfg.service(get_transaction);
 	cfg.service(deposit);
@@ -157,7 +158,7 @@ pub async fn transfer(path: web::Path<String>, body: web::Json<DuoTransaction>, 
 		return Err(TransactionError::BadPositiveMutation);
 	}
 
-	let new_transaction = Transaction::new(user_id, TransactionKind::Transfer, (transaction.mutation * 100.0) as i32, None);
+	let new_transaction = Transaction::new(user_id, TransactionKind::Transfer, (transaction.mutation * 100.0) as i32, Some(transaction.recipient));
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
 
@@ -195,6 +196,8 @@ async fn execute_transaction(transaction: Transaction, pool: web::Data<DbPool>) 
 		.first::<User>(&mut connection)
 		.expect("Error fetching user");
 
+		debug!("Found user: {} with balance of {}", user.id, user.balance);
+
 		connection.transaction(|connection| {
 			if transaction.kind == TransactionKind::Transfer.to_string() {
 				let recipient_user = users
@@ -202,16 +205,22 @@ async fn execute_transaction(transaction: Transaction, pool: web::Data<DbPool>) 
 					.first::<User>(connection)
 					.expect("Error fetching recipient");
 
+				debug!("Found recipient: {} with balance of {}", recipient_user.id, recipient_user.balance);
+
 				diesel::update(&recipient_user)
-					.set(balance.eq(recipient_user.balance - transaction.mutation))
+					.set(balance.eq(balance - transaction.mutation))
 					.execute(connection)
 					.expect("Error updating recipient balance");
+
+				debug!("Updating recipient balance: {} + {} = {}", recipient_user.balance, -transaction.mutation, recipient_user.balance + -transaction.mutation);
 			}
 
 			diesel::update(&user)
-				.set(balance.eq(user.balance + transaction.mutation))
+				.set(balance.eq(balance + transaction.mutation))
 				.execute(connection)
 				.expect("Error updating user balance");
+
+			debug!("Updating user balance: {} + {} = {}", user.balance, transaction.mutation, user.balance + transaction.mutation);
 
 			diesel::insert_into(transactions)
 				.values(&transaction)

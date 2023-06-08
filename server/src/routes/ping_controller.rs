@@ -5,6 +5,6 @@ pub async fn ping() -> HttpResponse {
 	HttpResponse::Ok().finish()
 }
 
-pub fn actix_config(cfg: &mut actix_web::web::ServiceConfig) {
+pub fn build_ping_controller(cfg: &mut actix_web::web::ServiceConfig) {
 	cfg.service(ping);
 }

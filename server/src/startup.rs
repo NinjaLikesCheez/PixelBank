@@ -36,9 +36,9 @@ pub fn run(listener: TcpListener, pool: r2d2::Pool<ConnectionManager<SqliteConne
 			.app_data(
 				web::JsonConfig::default().error_handler(json_decoding_error_handler)
 			)
-			.configure(crate::routes::ping_controller::actix_config)
-			.configure(crate::routes::user_controller::actix_config)
-			.configure(crate::routes::transaction_controller::actix_config)
+			.configure(crate::routes::ping_controller::build_ping_controller)
+			.configure(crate::routes::user_controller::build_user_controller)
+			.configure(crate::routes::transaction_controller::build_transaction_controller)
 		})
 		.listen(listener)?
 		.run();

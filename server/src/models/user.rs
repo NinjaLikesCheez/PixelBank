@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::schema::users;
 
-#[derive(Serialize, Deserialize, Queryable, Insertable, Identifiable)]
+#[derive(Serialize, Deserialize, Queryable, Insertable, Identifiable, Debug)]
 pub struct User {
 	pub id: String,
 	pub created_at: String,

@@ -42,6 +42,19 @@ impl TestContext {
 		}
 	}
 
+	pub async fn get_user(_ctx: &TestContext, _user_id: &str) -> User {
+		let response = _ctx.client
+			.get(&format!("{}/users/{}", _ctx.address, _user_id))
+			.send()
+			.await
+			.expect("Failed to execute request");
+
+		response
+			.json::<User>()
+			.await
+			.expect("Failed to decode to User model")
+	}
+
 	pub async fn create_user(_ctx: &TestContext, _username: &str, _balance: i32, _role: &str) -> User {
 		let json = json!({
 			"username": _username,
