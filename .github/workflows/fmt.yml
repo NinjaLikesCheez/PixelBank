@@ -1,0 +1,38 @@
+name: 🧹 Format Rust
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - **.rs
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  Run-Cargo-Fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🫣 Check out current branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: 🛠️ Setup Rust Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt
+
+      - name: 🧹 Cargo Format
+        working-directory: server
+        run: cargo fmt
+
+      - name: 💍 Commit Version Change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@github.com'
+
+          git add .
+          git commit -m "🤖 [Lint]"
+          git push
