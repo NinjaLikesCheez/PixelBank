@@ -11,7 +11,7 @@ async fn get_user_returns_200_for_existing_user_by_username() {
 	TestContext::create_user(&_ctx, "Ninja", 0, "member").await;
 
 	let response = _ctx.client
-		.get(format!("{}/users/name/ninja", _ctx.address))
+		.get(format!("{}/users/name/Ninja", _ctx.address))
 		.send()
 		.await
 		.expect("Failed to fetch user");

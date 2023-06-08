@@ -59,6 +59,7 @@ pub fn build_user_controller(cfg: &mut actix_web::web::ServiceConfig) {
 	cfg.service(get_user);
 	cfg.service(get_all_users);
 	cfg.service(create_user);
+	cfg.service(get_user_by_name);
 }
 
 #[post("/users")]

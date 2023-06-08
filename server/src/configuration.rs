@@ -12,10 +12,6 @@ pub struct DatabaseSettings {
 
 /// A function that returns a Result containing a Settings struct
 ///
-/// # Example
-/// ```
-/// let settings = get_configuration().expect("Could not load configuration.");
-/// ```
 /// # Errors
 /// 
 /// Will return a ConfigError if the configuration file is not found or if the
