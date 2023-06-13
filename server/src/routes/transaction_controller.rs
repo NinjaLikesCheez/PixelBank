@@ -13,12 +13,12 @@ type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
 
 #[derive(Deserialize)]
 pub struct SoloTransaction {
-	pub mutation: f32,
+	pub mutation: u32,
 }
 
 #[derive(Deserialize)]
 pub struct DuoTransaction {
-	pub mutation: f32,
+	pub mutation: u32,
 	pub recipient: String
 }
 
@@ -30,12 +30,8 @@ pub enum TransactionError {
 	BadTransactionId,
 	#[display(fmt = "An internal error occurred. Please feed the maintainers")]
 	InternalServerError, //TODO: Find a way to do general errors that are usable over more than a single controller
-	#[display(fmt = "Mutation is not a float")]
-	BadMutation,
-	#[display(fmt = "Mutation has to be positive for this transaction type")]
-	BadPositiveMutation,
-	#[display(fmt = "Mutation has to be negative for this transaction type")]
-	BadNegativeMutation
+	#[display(fmt = "Mutation is larger than {}", i32::MAX)]
+	MutationTooLarge
 }
 
 impl error::ResponseError for TransactionError {
@@ -49,9 +45,7 @@ impl error::ResponseError for TransactionError {
 			Self::NoTransactions => StatusCode::NOT_FOUND,
 			Self::BadTransactionId => StatusCode::BAD_REQUEST,
 			Self::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
-			Self::BadMutation => StatusCode::BAD_REQUEST,
-			Self::BadPositiveMutation => StatusCode::BAD_REQUEST,
-			Self::BadNegativeMutation => StatusCode::BAD_REQUEST
+			Self::MutationTooLarge => StatusCode::BAD_REQUEST,
 		}
 	}
 }
@@ -121,12 +115,12 @@ pub async fn get_transaction(path: web::Path<String>,  pool: web::Data<DbPool>) 
 pub async fn deposit(path: web::Path<String>, body: web::Json<SoloTransaction>, pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
-	
-	if transaction.mutation <= 0.0 {
-		return Err(TransactionError::BadNegativeMutation);
+
+	if transaction.mutation > i32::MAX as u32 {
+		return Err(TransactionError::MutationTooLarge);
 	}
 
-	let new_transaction = Transaction::new(user_id, TransactionKind::Deposit, (transaction.mutation * 100.0) as i32, None);
+	let new_transaction = Transaction::new(user_id, TransactionKind::Deposit, transaction.mutation as i32, None);
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
 
@@ -138,11 +132,11 @@ pub async fn withdrawal(path: web::Path<String>, body: web::Json<SoloTransaction
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
 
-	if transaction.mutation >= 0.0 {
-		return Err(TransactionError::BadPositiveMutation);
+	if transaction.mutation > i32::MAX as u32 {
+		return Err(TransactionError::MutationTooLarge);
 	}
 
-	let new_transaction = Transaction::new(user_id, TransactionKind::Withdrawal, (transaction.mutation * 100.0) as i32, None);
+	let new_transaction = Transaction::new(user_id, TransactionKind::Withdrawal, -(transaction.mutation as i32), None);
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
 
@@ -154,11 +148,11 @@ pub async fn transfer(path: web::Path<String>, body: web::Json<DuoTransaction>, 
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
 
-	if transaction.mutation >= 0.0 {
-		return Err(TransactionError::BadPositiveMutation);
+	if transaction.mutation > i32::MAX as u32 {
+		return Err(TransactionError::MutationTooLarge);
 	}
 
-	let new_transaction = Transaction::new(user_id, TransactionKind::Transfer, (transaction.mutation * 100.0) as i32, Some(transaction.recipient));
+	let new_transaction = Transaction::new(user_id, TransactionKind::Transfer, -(transaction.mutation as i32), Some(transaction.recipient));
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
 
@@ -171,11 +165,11 @@ pub async fn purchase(path: web::Path<String>, body: web::Json<SoloTransaction>,
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
 
-	if transaction.mutation >= 0.0 {
-		return Err(TransactionError::BadPositiveMutation);
+	if transaction.mutation > i32::MAX as u32 {
+		return Err(TransactionError::MutationTooLarge);
 	}
 
-	let new_transaction = Transaction::new(user_id, TransactionKind::Purchase, (transaction.mutation * 100.0) as i32, None);
+	let new_transaction = Transaction::new(user_id, TransactionKind::Purchase, -(transaction.mutation as i32), None);
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
 

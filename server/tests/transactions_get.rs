@@ -8,7 +8,7 @@ async fn get_transactions_returns_200() {
 	let _ctx = TestContext::new();
 
 	let user = TestContext::create_user(&_ctx, "Ninja", 0, "member").await;
-	TestContext::create_transaction(&_ctx, &user.id).await;
+	TestContext::create_transaction(&_ctx, &user.id, "Deposit", &6942).await;
 
 	let response = _ctx.client
 		.get(format!("{}/users/{}/transactions", _ctx.address, user.id))
@@ -22,6 +22,7 @@ async fn get_transactions_returns_200() {
 		.expect("Failed to decode to Transaction model");
 
 	assert_eq!(transactions.len(), 1);
+	assert_eq!(transactions[0].mutation, 6942);
 }
 
 
@@ -31,7 +32,7 @@ async fn get_transaction_returns_200_for_existing_transaction() {
 
 	let user = TestContext::create_user(&_ctx, "Ninja", 0, "member").await;
 	assert_eq!(user.balance, 0);
-	let transaction = TestContext::create_transaction(&_ctx, &user.id).await;
+	let transaction = TestContext::create_transaction(&_ctx, &user.id, "Deposit", &6942).await;
 
 	let response = _ctx.client
 		.get(format!("{}/transactions/{}", _ctx.address, transaction.id.expect("Create Transaction Failed")))

@@ -82,14 +82,14 @@ impl TestContext {
 			.expect("No results returned from database")
 	}
 
-	pub async fn create_transaction(_ctx: &TestContext, user_id_in: &str) -> Transaction {
-		//Serde really doesn't like floats, so we're just not making it variable
+	pub async fn create_transaction(_ctx: &TestContext, user_id_in: &str, transaction_type: &str, mutation: &i32) -> Transaction {
+		//Serde really doesn't like floats, so we're just not making it variable for now
 		let json = json!({
-			"mutation": 69.42
+			"mutation": mutation
 		});
 
 		let response = _ctx.client
-			.post(&format!("{}/users/{}/transactions/deposit", _ctx.address, user_id_in))
+			.post(&format!("{}/users/{}/transactions/{}", _ctx.address, user_id_in, transaction_type))
 			.json(&json)
 			.send()
 			.await

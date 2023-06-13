@@ -10,8 +10,7 @@ async fn create_deposit_returns_transaction() {
 
 	let user = TestContext::create_user(&_ctx, "Ninja", 0, "member").await;
 
-    let mutation = 42.50;
-    let mutation_in_cents = (mutation * 100.0) as i32;
+    let mutation = 4250;
 
     let json = json!({
         "mutation": mutation
@@ -31,11 +30,11 @@ async fn create_deposit_returns_transaction() {
     .await
     .expect("Failed to decode to Transaction model");
 
-    assert_eq!(response_json.mutation, mutation_in_cents, "Mutation is {}, not {}", response_json.mutation, mutation_in_cents); //Looks like currently fetched transactions are in cents. Should probably change that up.
+    assert_eq!(response_json.mutation, mutation, "Mutation is {}, not {}", response_json.mutation, mutation); //Looks like currently fetched transactions are in cents. Should probably change that up.
     assert_eq!(response_json.kind, "Deposit", "Transaction type is {}, not Deposit", response_json.kind);
 
     let updated_user = TestContext::get_user(&_ctx, &user.id).await;
-    assert_eq!(updated_user.balance, user.balance + mutation_in_cents, "User balance is {}, not {}", updated_user.balance, user.balance + mutation_in_cents); //here too
+    assert_eq!(updated_user.balance, user.balance + mutation, "User balance is {}, not {}", updated_user.balance, user.balance + mutation); //here too
 }
 
 #[tokio::test]
@@ -44,8 +43,7 @@ async fn create_withdrawal_returns_transaction() {
 
 	let user = TestContext::create_user(&_ctx, "Ninja", 1000, "member").await;
 
-    let mutation = -5.0;
-    let mutation_in_cents = (mutation * 100.0) as i32;
+    let mutation = 500;
 
     let json = json!({
         "mutation": mutation
@@ -65,11 +63,11 @@ async fn create_withdrawal_returns_transaction() {
     .await
     .expect("Failed to decode to Transaction model");
 
-    assert_eq!(response_json.mutation, mutation_in_cents, "Mutation is {}, not {}", response_json.mutation, mutation_in_cents); //Looks like currently fetched transactions are in cents. Should probably change that up.
+    assert_eq!(response_json.mutation, -mutation, "Mutation is {}, not {}", response_json.mutation, mutation); //Looks like currently fetched transactions are in cents. Should probably change that up.
     assert_eq!(response_json.kind, "Withdrawal", "Transaction type is {}, not Withdrawal", response_json.kind);
 
     let updated_user = TestContext::get_user(&_ctx, &user.id).await;
-    assert_eq!(updated_user.balance, user.balance + mutation_in_cents, "User balance is {}, not {}", updated_user.balance, user.balance + mutation_in_cents); //here too
+    assert_eq!(updated_user.balance, user.balance - mutation, "User balance is {}, not {}", updated_user.balance, user.balance + mutation); //here too
 }
 
 #[tokio::test]
@@ -78,8 +76,7 @@ async fn create_purchase_returns_transaction() {
 
 	let user = TestContext::create_user(&_ctx, "Ninja", 1000, "member").await;
 
-    let mutation = -5.0;
-    let mutation_in_cents = (mutation * 100.0) as i32;
+    let mutation = 500;
 
     let json = json!({
         "mutation": mutation
@@ -99,11 +96,11 @@ async fn create_purchase_returns_transaction() {
     .await
     .expect("Failed to decode to Transaction model");
 
-    assert_eq!(response_json.mutation, mutation_in_cents, "Mutation is {}, not {}", response_json.mutation, mutation_in_cents); //Looks like currently fetched transactions are in cents. Should probably change that up.
+    assert_eq!(response_json.mutation, -mutation, "Mutation is {}, not {}", response_json.mutation, mutation); //Looks like currently fetched transactions are in cents. Should probably change that up.
     assert_eq!(response_json.kind, "Purchase", "Transaction type is {}, not Purchase", response_json.kind);
 
     let updated_user = TestContext::get_user(&_ctx, &user.id).await;
-    assert_eq!(updated_user.balance, user.balance + mutation_in_cents, "User balance is {}, not {}", updated_user.balance, user.balance + mutation_in_cents); //here too
+    assert_eq!(updated_user.balance, user.balance - mutation, "User balance is {}, not {}", updated_user.balance, user.balance + mutation); //here too
 }
 
 #[tokio::test]
@@ -113,8 +110,7 @@ async fn create_transfer_returns_transaction() {
 	let user = TestContext::create_user(&_ctx, "Ninja", 1000, "member").await;
     let recipient = TestContext::create_user(&_ctx, "Aiko", 1000, "member").await;
 
-    let mutation = -5.0;
-    let mutation_in_cents = (mutation * 100.0) as i32;
+    let mutation = 500;
 
     let json = json!({
         "mutation": mutation,
@@ -135,13 +131,13 @@ async fn create_transfer_returns_transaction() {
     .await
     .expect("Failed to decode to Transaction model");
 
-    assert_eq!(response_json.mutation, mutation_in_cents, "Mutation is {}, not {}", response_json.mutation, mutation_in_cents); //Looks like currently fetched transactions are in cents. Should probably change that up.
+    assert_eq!(response_json.mutation, -mutation, "Mutation is {}, not {}", response_json.mutation, mutation); //Looks like currently fetched transactions are in cents. Should probably change that up.
     assert_eq!(response_json.kind, "Transfer", "Transaction type is {}, not Transfer", response_json.kind);
 
     let updated_user = TestContext::get_user(&_ctx, &user.id).await;
-    assert_eq!(updated_user.balance, user.balance + mutation_in_cents, "User balance is {}, not {}", user.balance, user.balance + mutation_in_cents); //here too
+    assert_eq!(updated_user.balance, user.balance - mutation, "User balance is {}, not {}", user.balance, user.balance + mutation); //here too
 
     let updated_recipient = TestContext::get_user(&_ctx, &recipient.id).await;
-    assert_eq!(updated_recipient.balance, recipient.balance - mutation_in_cents, "Recipient balance is {}, not {}", updated_recipient.balance, recipient.balance - mutation_in_cents); //here too
+    assert_eq!(updated_recipient.balance, recipient.balance + mutation, "Recipient balance is {}, not {}", updated_recipient.balance, recipient.balance - mutation); //here too
 
 }
