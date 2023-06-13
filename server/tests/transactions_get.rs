@@ -8,7 +8,7 @@ async fn get_transactions_returns_200() {
 	let _ctx = TestContext::new();
 
 	let user = TestContext::create_user(&_ctx, "Ninja", 0, "member").await;
-	TestContext::create_transaction(&_ctx, &user.id, "Deposit", &6942).await;
+	TestContext::create_transaction(&_ctx, &user.id, "deposit", &6942).await;
 
 	let response = _ctx.client
 		.get(format!("{}/users/{}/transactions", _ctx.address, user.id))
@@ -32,7 +32,7 @@ async fn get_transaction_returns_200_for_existing_transaction() {
 
 	let user = TestContext::create_user(&_ctx, "Ninja", 0, "member").await;
 	assert_eq!(user.balance, 0);
-	let transaction = TestContext::create_transaction(&_ctx, &user.id, "Deposit", &6942).await;
+	let transaction = TestContext::create_transaction(&_ctx, &user.id, "deposit", &6942).await;
 
 	let response = _ctx.client
 		.get(format!("{}/transactions/{}", _ctx.address, transaction.id.expect("Create Transaction Failed")))
