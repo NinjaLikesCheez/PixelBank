@@ -9,7 +9,14 @@ pub struct DatabaseSettings {
 	pub path: String,
 }
 
-pub fn get_configuration() -> Result<Settings, config::ConfigError> {
+
+/// A function that returns a Result containing a Settings struct
+///
+/// # Errors
+/// 
+/// Will return a ConfigError if the configuration file is not found or if the
+/// configuration file is not valid.
+pub fn get() -> Result<Settings, config::ConfigError> {
 	let settings = config::Config::builder()
 		.add_source(config::File::new("configuration.yml", config::FileFormat::Yaml))
 		.build()?;

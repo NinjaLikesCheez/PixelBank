@@ -30,7 +30,7 @@ paths:
         '200':
           description: OK
   ### USERS
-  /user/:
+  /users/:
     post:
       summary: Create new user
       description: Create a new user
@@ -73,7 +73,7 @@ paths:
                 $ref: '#/components/schemas/Error'
 
 
-  /user/{userID}:
+  /users/{userID}:
     parameters:
         - name: username
           in: path
@@ -109,7 +109,7 @@ paths:
                 $ref: '#/components/schemas/Users'
   ### END USERS
   ### TRANSACTIONS
-  /txn/spend:
+  /users/{id}/transactions/{purchase}:
     post:
       tags:
         - Transactions

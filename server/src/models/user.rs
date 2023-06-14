@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::schema::users;
 
-#[derive(Serialize, Deserialize, Queryable, Insertable)]
+#[derive(Serialize, Deserialize, Queryable, Insertable, Identifiable, Debug)]
 pub struct User {
 	pub id: String,
 	pub created_at: String,
@@ -16,7 +16,7 @@ pub struct User {
 
 impl User {
 		pub fn new(username: String, balance: i32, role: String) -> Self {
-			User {
+			Self {
 				id: Uuid::new_v4().to_string(),
 				created_at: Utc::now().to_rfc3339(),
 				username,
