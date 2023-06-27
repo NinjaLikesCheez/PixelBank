@@ -37,6 +37,6 @@ async fn main() -> Result<(), std::io::Error> {
 		.expect("Failed to load SQLite database");
 
 	info!("✔️  Successfully connected to database");
-	
+
 	startup::run(listener, pool)?.await
 }

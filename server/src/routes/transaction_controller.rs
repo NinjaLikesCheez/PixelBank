@@ -1,26 +1,17 @@
 use actix_web::{web, HttpResponse, error::{self}, http::{StatusCode}, get, post};
 use diesel::{SqliteConnection, RunQueryDsl, r2d2};
 use log::debug;
-use serde::{Deserialize};
 use derive_more::{Display, Error};
 use diesel::prelude::*;
 
-use crate::{models::{Transaction, TransactionKind, User}};
+use crate::{
+	models::{Transaction, TransactionKind, User},
+	schemas::{UserLookupIDRequest, TransactionLookupRequest, SoloTransaction, DuoTransaction}
+};
 use crate::models::APIError;
 
 // TODO: move to database module
 type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
-
-#[derive(Deserialize)]
-pub struct SoloTransaction {
-	pub mutation: u32,
-}
-
-#[derive(Deserialize)]
-pub struct DuoTransaction {
-	pub mutation: u32,
-	pub recipient: String
-}
 
 #[derive(Debug, Display, Error)]
 pub enum TransactionError {
@@ -59,11 +50,20 @@ pub fn build_transaction_controller(cfg: &mut actix_web::web::ServiceConfig) {
 	cfg.service(purchase);
 }
 
-//Getting transactions
-
+/// Get a User's Transactions
+#[utoipa::path(
+	tag = "Transaction",
+	params(
+		UserLookupIDRequest
+	),
+	responses(
+			(status = OK, description = "A User with the given ID was found, and that user had transactions", body = Vec<Transaction>),
+			(status = NOT_FOUND, description = "A User with this ID was not found, or they didn't have any transactions"),
+	)
+)]
 #[get("/users/{userId}/transactions")]
-pub async fn get_user_transactions(path: web::Path<String>,  pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
-	let user_id_in = path.into_inner();
+pub async fn get_user_transactions(path: web::Path<UserLookupIDRequest>,  pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
+	let user_id_in: String = path.into_inner().id;
 
 	let user_transactions: Vec<Transaction> = web::block(move || {
 		use crate::schema::transactions::dsl::*;
@@ -78,6 +78,7 @@ pub async fn get_user_transactions(path: web::Path<String>,  pool: web::Data<DbP
 	.await
 	.map_err(|_e| TransactionError::NoTransactions)?;
 
+	// TODO: return empty array? Meaning is the same
 	if user_transactions.is_empty() {
 		return Err(TransactionError::NoTransactions);
 	}
@@ -85,14 +86,25 @@ pub async fn get_user_transactions(path: web::Path<String>,  pool: web::Data<DbP
 	Ok(HttpResponse::Ok().json(user_transactions))
 }
 
+/// Get details of a specific Transaction
+#[utoipa::path(
+	tag = "Transaction",
+	params(
+		TransactionLookupRequest
+	),
+	responses(
+			(status = OK, description = "Details of the specific Transaction", body = Transaction),
+			(status = NOT_FOUND, description = "No transaction with this ID was found"),
+	)
+)]
 #[get("/transactions/{transactionId}")]
-pub async fn get_transaction(path: web::Path<String>,  pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
-	let transaction_id = path.into_inner().parse::<i32>().map_err(|_e| TransactionError::BadTransactionId)?;
+pub async fn get_transaction(path: web::Path<TransactionLookupRequest>,  pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
+	let transaction_id = path.into_inner().id;
 
 	let transaction: Transaction = web::block(move || {
 		use crate::schema::transactions::dsl::*;
 		let mut connection = pool.get()
-			.map_err(|_e| TransactionError::NoTransactions)
+			.map_err(|_e| TransactionError::NoTransactions) // TODO: change this to a different error...
 			.expect("Failed to get connection from pool");
 
 		transactions
@@ -108,77 +120,138 @@ pub async fn get_transaction(path: web::Path<String>,  pool: web::Data<DbPool>) 
 	Ok(HttpResponse::Ok().json(transaction))
 }
 
-//Creating transactions
 //TODO: Can we replace these with Macros?
-
+/// Create a Deposit Transaction
+#[utoipa::path(
+	tag = "Transaction",
+	params(
+		UserLookupIDRequest
+	),
+	request_body(
+		content = SoloTransaction,
+		description = "Details of the Deposit Transaction"
+	),
+	responses(
+			(status = OK, description = "Deposit Transaction was created", body = Transaction),
+			(status = BAD_REQUEST, description = "Mutation was too large"),
+			(status = INTERNAL_SERVER_ERROR, description = "Internal Server Error"),
+	)
+)]
 #[post("/users/{userId}/transactions/deposit")]
-pub async fn deposit(path: web::Path<String>, body: web::Json<SoloTransaction>, pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
-	let user_id = path.into_inner();
+pub async fn deposit(path: web::Path<UserLookupIDRequest>, body: web::Json<SoloTransaction>, pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
+	let user_id = path.into_inner().id;
 	let transaction = body.into_inner();
 
-	if transaction.mutation > i32::MAX as u32 {
+	if transaction.amount > i32::MAX as u32 {
 		return Err(TransactionError::MutationTooLarge);
 	}
 
-	let new_transaction = Transaction::new(user_id, TransactionKind::Deposit, transaction.mutation as i32, None);
+	let new_transaction = Transaction::new(user_id, TransactionKind::Deposit, transaction.amount as i32, None);
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
 
 	Ok(HttpResponse::Ok().json(inserted_transaction))
 }
 
+/// Create a Withdrawal Transaction
+#[utoipa::path(
+	tag = "Transaction",
+	params(
+		UserLookupIDRequest
+	),
+	request_body(
+		content = SoloTransaction,
+		description = "Details of the Withdrawal Transaction"
+	),
+	responses(
+			(status = OK, description = "Withdrawal Transaction was created", body = Transaction),
+			(status = BAD_REQUEST, description = "Mutation was too large"),
+			(status = INTERNAL_SERVER_ERROR, description = "Internal Server Error"),
+	)
+)]
 #[post("/users/{userId}/transactions/withdrawal")]
 pub async fn withdrawal(path: web::Path<String>, body: web::Json<SoloTransaction>, pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
 
-	if transaction.mutation > i32::MAX as u32 {
+	if transaction.amount > i32::MAX as u32 {
 		return Err(TransactionError::MutationTooLarge);
 	}
 
-	let new_transaction = Transaction::new(user_id, TransactionKind::Withdrawal, -(transaction.mutation as i32), None);
+	let new_transaction = Transaction::new(user_id, TransactionKind::Withdrawal, -(transaction.amount as i32), None);
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
 
 	Ok(HttpResponse::Ok().json(inserted_transaction))
 }
 
+/// Create a Transfer Transaction
+#[utoipa::path(
+	tag = "Transaction",
+	params(
+		UserLookupIDRequest
+	),
+	request_body(
+		content = DuoTransaction,
+		description = "Details of the Transfer Transaction"
+	),
+	responses(
+			(status = OK, description = "Transfer Transaction was created", body = Transaction),
+			(status = BAD_REQUEST, description = "Mutation was too large"),
+			(status = INTERNAL_SERVER_ERROR, description = "Internal Server Error"),
+	)
+)]
 #[post("/users/{userId}/transactions/transfer")]
 pub async fn transfer(path: web::Path<String>, body: web::Json<DuoTransaction>, pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
 
-	if transaction.mutation > i32::MAX as u32 {
+	if transaction.amount > i32::MAX as u32 {
 		return Err(TransactionError::MutationTooLarge);
 	}
 
-	let new_transaction = Transaction::new(user_id, TransactionKind::Transfer, -(transaction.mutation as i32), Some(transaction.recipient));
+	let new_transaction = Transaction::new(user_id, TransactionKind::Transfer, -(transaction.amount as i32), Some(transaction.recipient));
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
 
 	Ok(HttpResponse::Ok().json(inserted_transaction))
 }
 
-//More for completeness.
+/// Create a Purchase Transaction
+#[utoipa::path(
+	tag = "Transaction",
+	params(
+		UserLookupIDRequest
+	),
+	request_body(
+		content = SoloTransaction,
+		description = "Details of the Transfer Transaction"
+	),
+	responses(
+			(status = OK, description = "Purchase Transaction was created", body = Transaction),
+			(status = BAD_REQUEST, description = "Mutation was too large"),
+			(status = INTERNAL_SERVER_ERROR, description = "Internal Server Error"),
+	)
+)]
 #[post("/users/{userId}/transactions/purchase")]
 pub async fn purchase(path: web::Path<String>, body: web::Json<SoloTransaction>, pool: web::Data<DbPool>) -> Result<HttpResponse, TransactionError> {
 	let user_id = path.into_inner();
 	let transaction = body.into_inner();
 
-	if transaction.mutation > i32::MAX as u32 {
+	if transaction.amount > i32::MAX as u32 {
 		return Err(TransactionError::MutationTooLarge);
 	}
 
-	let new_transaction = Transaction::new(user_id, TransactionKind::Purchase, -(transaction.mutation as i32), None);
+	let new_transaction = Transaction::new(user_id, TransactionKind::Purchase, -(transaction.amount as i32), None);
 
 	let inserted_transaction = execute_transaction(new_transaction, pool).await?;
 
 	Ok(HttpResponse::Ok().json(inserted_transaction))
 }
 
-//TODO: Move this to a database module, since you'll have to touch this for products sales too :)
+// TODO: Move this to a database module, since you'll have to touch this for products sales too :)
 async fn execute_transaction(transaction: Transaction, pool: web::Data<DbPool>) -> Result<Transaction, TransactionError> {
-	//TODO: Find a way to map the blockingerrors properly. I want the user to know what went wrong.
+	// TODO: Find a way to map the blockingerrors properly. I want the user to know what went wrong.
 	web::block(move || {
 		use crate::schema::transactions::dsl::*;
 		use crate::schema::users::dsl::*;

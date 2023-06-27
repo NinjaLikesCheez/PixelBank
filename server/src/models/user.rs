@@ -1,11 +1,12 @@
 use chrono::Utc;
 use diesel::prelude::*;
+use utoipa::ToSchema;
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
 
 use crate::schema::users;
 
-#[derive(Serialize, Deserialize, Queryable, Insertable, Identifiable, Debug)]
+#[derive(Serialize, Deserialize, Queryable, Insertable, Identifiable, Debug, ToSchema)]
 pub struct User {
 	pub id: String,
 	pub created_at: String,
