@@ -1,6 +1,6 @@
 {
     "rust-analyzer.linkedProjects": [
-        "./server/Cargo.toml",
+        "./Cargo.toml",
     ],
     "lldb.displayFormat": "auto",
     "lldb.showDisassembly": "never",
